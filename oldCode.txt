@@ -1,0 +1,207 @@
+//Class name:	LoginWindowDatabase
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package TestMethodsMasterKey;
+
+/**
+ *
+ * @author Shaun
+ */
+import java.awt.HeadlessException;
+import java.sql.*;
+import javax.swing.JOptionPane;
+public class LoginWindowDatabase{
+    //defining global variables
+        Connection connect = null;
+        ResultSet result = null;
+        Statement stmnt = null;
+        PreparedStatement prepStmnt = null;
+        //EncryptDecrypt objEncryptDecrypt = new EncryptDecrypt(); //creating an object of the class EncryptDecrypt
+    public LoginWindowDatabase(){}
+    {
+        try{
+            //Loads ucanaccess drivers and connect the database
+            connect = DriverManager.getConnection("jdbc:ucanaccess://H:\\Cipher\\PROGRAMMING\\Java\\Projects\\MasterKey\\src\\MasterKey.accdb");
+            System.out.println("Driver successfully loaded");
+        }catch(Exception e){
+            JOptionPane.showMessageDialog(null,"Unable to load database driver\n"+e.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+        }
+    }
+        /*
+            The below method will register a new user and insert in the database
+            This method will firstly check if the username entered exists or not,
+            if it exist it will be padded by '01'
+        */
+        public void registerUser(String username, String masterKey){
+            try{
+                stmnt = connect.createStatement();
+                String encryptMasterKey = objEncryptDecrypt.getEncryption(masterKey);
+                ResultSet checkUsername = stmnt.executeQuery("SELECT Username FROM Login"); //read all usernames from Database
+                while(checkUsername.next()){
+                    if(!checkUsername.getString("Username").equals(username)){
+                        /*if the username does not exist, no padding will be done.
+                         User will be registered as per the details provided*/ 
+                        System.out.println("username is unique");
+                        String insertDetails = "INSERT INTO Login(Username, MasterKey) VALUES(?, ?)";
+                        prepStmnt = connect.prepareStatement(insertDetails);
+                        prepStmnt.setString(1, username);
+                        prepStmnt.setString(2, encryptMasterKey);
+                        prepStmnt.executeUpdate();
+                        JOptionPane.showMessageDialog(null, "Successfully registered");
+                        break;
+                        //connect.close();
+                    }else{
+                        //Username will be padded as it exist already
+                        if(checkUsername.getString("Username").equals(username)){ //checks if the username entered exist or not
+                            int padNumber = (int)(Math.random());   //random number that will be used to pad the already existing username
+                            JOptionPane.showMessageDialog(null, "Please note!!\nUsername will be padded by '"+padNumber+"' as it exists already.");
+                            String insertDetails = "INSERT INTO Login(Username, MasterKey) VALUES(?, ?)";
+                            prepStmnt = connect.prepareStatement(insertDetails);
+                            prepStmnt.setString(1, username+padNumber);
+                            prepStmnt.setString(2, encryptMasterKey);
+                            prepStmnt.executeUpdate();
+                            JOptionPane.showMessageDialog(null, "Successfully registered");
+                            break;
+                            //connect.close();
+                        }
+                    }
+                }          
+            }catch(HeadlessException | SQLException error){
+                JOptionPane.showMessageDialog(null,"Unable to register provided details\n"+error.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+            }
+        }*/
+        
+        /*
+            This method verifies the login details provided by the user.
+            If details are correct the user can login
+        */
+        public boolean getLogin(String userName, String masterKey){
+            //this variable will keep status of the details entered if they are correct(true) or not(false)
+            boolean status = false;
+            String user[] = new String[3]; //
+            String mstrKey[] = new String[3];
+            int i = 0;
+            try{
+                stmnt = connect.createStatement();
+                ResultSet loginDetails = stmnt.executeQuery("SELECT Username, MasterKey FROM Login"); //Select username and masterkey from database
+                while(loginDetails.next()){
+                    String encryptedMasterKey = loginDetails.getString("MasterKey");    //reads encrpted master key from the Database
+                    String decryptedMasterKey = objEncryptDecrypt.getDecryption(encryptedMasterKey); //returns a decrypted master key from getDecryption method
+                    user[i] = loginDetails.getString("Username");
+                    mstrKey[i] = decryptedMasterKey;
+                    i+=1;
+                }
+            for(int a = 0; a < user.length; a++){
+                System.out.println(user[a]+"\t"+mstrKey[a]);
+            }
+                for (String user1 : user) {
+                    for (String mstrKey1 : mstrKey) {
+                        //checks if username and password entered match that in the database
+                        status = userName.equals(user1) && masterKey.equals(mstrKey1);
+                    }
+                } 
+            }catch(SQLException error){
+                JOptionPane.showMessageDialog(null,"Unable to login with the provided details\n"+error.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+            }
+            return status;
+        }
+        
+        /*
+            This method will insert the provided credentials into the database
+        */
+        public void RegisterCredentials(String name, String URL, String password){
+            try{
+                stmnt = connect.createStatement();
+                ResultSet checkName = stmnt.executeQuery("SELECT Name FROM Credentials"); //read all usernames from Database
+                while(checkName.next()){
+                    if(!checkName.getString("Name").equals(name)){
+                        /*if the name does not exist, no padding will be done.
+                         User will be registered as per the details provided*/
+                        System.out.println("Name is unique");
+                        int confirmOption = JOptionPane.showConfirmDialog(null,"Confirm details,\n\n"+"Name:"+"\t\t\t"+name+"\nPassword:"+"\t\t"+password+"\nURL:"+"\t\t\t"+URL+"\n\n"+"Proceed with these details?\n",
+                                    "Response",JOptionPane.YES_NO_OPTION);
+                            if(confirmOption == 0){
+                                String registerCredentials = "INSERT INTO Credentials(Name, Password, Old_Password,URL) VALUES(?, ?, ?, ?)";
+                                prepStmnt = connect.prepareStatement(registerCredentials);
+                                prepStmnt.setString(1, name);
+                                prepStmnt.setString(2, objEncryptDecrypt.getEncryption(password));
+                                prepStmnt.setString(3, null);
+                                prepStmnt.setString(4, URL);
+                                prepStmnt.executeUpdate();
+                                JOptionPane.showMessageDialog(null, "Successfully registered credentials");
+                                break;
+                            }else{
+                                JOptionPane.showMessageDialog(null, "Thank you, Please correct the details again.","Correction",JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        
+                    }else{
+                        //Name will be padded as it exist already
+                        if(checkName.getString("Name").equals(name)){ //checks if the username entered exist or not
+                            int padNumber = (int)(Math.random());   //random number that will be used to pad the already existing username
+                            int confirmOption = JOptionPane.showConfirmDialog(null,"Confirm details,\n\n"+"Name:"+"\t\t\t"+name+"\nPassword:"+"\t\t"+password+"\nURL:"+"\t\t\t"+URL+"\n\n"+"Proceed with these details?\n",
+                                    "Response",JOptionPane.YES_NO_OPTION);
+                            if(confirmOption == 0){
+                                JOptionPane.showMessageDialog(null, "Please note!!\nName will be padded by '"+padNumber+"' as it exists already.");
+                                String registerCredentials = "INSERT INTO Credentials(Name, Password, Old_Password,URL) VALUES(?, ?, ?, ?)";
+                                prepStmnt = connect.prepareStatement(registerCredentials);
+                                prepStmnt.setString(1, name+padNumber);
+                                prepStmnt.setString(2, objEncryptDecrypt.getEncryption(password));
+                                prepStmnt.setString(3, null);
+                                prepStmnt.setString(4, URL);
+                                prepStmnt.executeUpdate();
+                                JOptionPane.showMessageDialog(null, "Successfully registered credentials");
+                                break;
+                            }else{
+                                JOptionPane.showMessageDialog(null, "Thank you, Please correct the details again.","Correction",JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        }
+                    }
+                }          
+            }catch(HeadlessException | SQLException error){
+                System.out.println("Unable to register provided credentials\n"+error.getMessage());
+                JOptionPane.showMessageDialog(null,"Unable to register provided credentials\n"+error.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        
+        /*
+            The below code will search through the database using the phrase
+            or argument entered by the user
+        */
+        /*public String getSearchPhrase(String searchPhrase){
+            String searchResults = "";
+            try{
+                stmnt = connect.createStatement();
+                ResultSet searchArgument = stmnt.executeQuery("SELECT * FROM Credentials WHERE Name LIKE '%"+searchPhrase+"%'");
+                while(searchArgument.next()){
+                    searchResults = searchArgument.getString(1)+objEncryptDecrypt.getDecryption(searchArgument.getString(2))+objEncryptDecrypt.getDecryption(searchArgument.getString(3))+searchArgument.getString(4);
+                }
+            }catch(Exception error){
+                JOptionPane.showMessageDialog(null,"No data was found based on the phrase entered\n"+error.getMessage(),"Error",JOptionPane.ERROR_MESSAGE);
+            }
+            return searchResults;
+        }
+        
+        /*public void testContains(String check){
+            String name = "banelehendrickshaunmlamleli";
+            if(!name.contains(check)){
+                JOptionPane.showMessageDialog(null, "search phrase exist");
+            }else{
+                JOptionPane.showMessageDialog(null, "search phrase DOES NOT exist");
+            }
+        }*/
+    
+    /*public static void main(String[]args){
+        String usr = JOptionPane.showInputDialog(null,"Enter username: ");
+        //String pass = JOptionPane.showInputDialog(null,"Enter password: ");
+        LoginWindowDatabase obj = new LoginWindowDatabase();
+        //System.out.println(obj.getLogin(usr, pass));
+        //obj.getSearchPhrase(usr);
+        obj.getSearchPhrase(usr);
+        
+    }*/
+}
