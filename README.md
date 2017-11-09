@@ -1,1 +1,3 @@
 # MasterKey
+I created this program solely to save my online credentials since I have a lot of accounts and passwords. I did not want to use the already available programs such KeePass. I was however very much motivated by KeePass. I wanted to use my own encrption algorithm to encrypt the credentials before storing them in a database. Secondly I used MS Access as my database since it was the only database system I was familiar with at the time I built MasterKey. I also used UCanAccess JDBC driver since JDBC-ODBC Bridge has been removed from Java 8.
+This is of the project I will continue upgrading and hopefully there will be more poeple who can work with me.
